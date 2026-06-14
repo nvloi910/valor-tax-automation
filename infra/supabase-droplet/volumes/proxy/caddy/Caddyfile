@@ -1,0 +1,16 @@
+# API — Vercel app + REST/Auth/Realtime (proxied to Kong)
+supabase.valortaxrelief.com {
+    reverse_proxy kong:8000
+    header -server
+}
+
+# Studio dashboard — browser UI (proxied to Studio with basic auth)
+supadashboard.valortaxrelief.com {
+    handle {
+        basic_auth {
+            {$PROXY_AUTH_USERNAME} {$PROXY_AUTH_PASSWORD}
+        }
+        reverse_proxy studio:3000
+    }
+    header -server
+}
