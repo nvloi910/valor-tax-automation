@@ -1,5 +1,5 @@
-<!-- Design reference only. Runtime template: lib/officer-appointment-task.template.js -->
-<!DOCTYPE html>
+/** Bundled email template — edit templates/officer-appointment-task.html then sync here for Vercel. */
+export const OFFICER_APPOINTMENT_TASK_TEMPLATE = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -110,4 +110,4 @@
     </div>
   </div>
 </body>
-</html>
+</html>`;

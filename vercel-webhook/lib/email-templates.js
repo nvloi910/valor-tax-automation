@@ -1,12 +1,6 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { parseGhlDate } from "./irs-logics.js";
 import { formatReadableDate } from "./webhook.js";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEMPLATE_PATH = join(__dirname, "../templates/officer-appointment-task.html");
+import { OFFICER_APPOINTMENT_TASK_TEMPLATE } from "./officer-appointment-task.template.js";
 
 let cachedTemplate = null;
 
@@ -22,7 +16,7 @@ export function escapeHtml(value) {
 
 export function loadOfficerTaskTemplate() {
   if (!cachedTemplate) {
-    cachedTemplate = readFileSync(TEMPLATE_PATH, "utf8");
+    cachedTemplate = OFFICER_APPOINTMENT_TASK_TEMPLATE;
   }
   return cachedTemplate;
 }
