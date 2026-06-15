@@ -1,4 +1,4 @@
-import { sendGmail, isGmailConfigured, resolveGmailNotifyBcc } from "./gmail.js";
+import { sendGmail, isGmailConfigured, resolveGmailNotifyBcc, resolveGmailNotifyCc } from "./gmail.js";
 import { getCaseOfficer, getSettlementOfficerEmail } from "./irs-logics.js";
 import { renderOfficerTaskEmailHtml, extractBookingFields } from "./email-templates.js";
 
@@ -129,11 +129,13 @@ export async function notifyOfficerTaskCreated(
 
   const sendResult = await sendFn({ to: recipient.email, subject, text, html }, { env });
   const bcc = sendResult?.bcc ?? resolveGmailNotifyBcc(env, recipient.email);
+  const cc = sendResult?.cc ?? resolveGmailNotifyCc(env, { to: recipient.email, bcc });
+  const ccNote = cc.length ? ` (cc: ${cc.join(", ")})` : "";
   const bccNote = bcc ? ` (bcc: ${bcc})` : "";
   console.log(
-    `Officer email sent to ${recipient.email}${bccNote} for case ${caseId}, task ${taskId}`
+    `Officer email sent to ${recipient.email}${ccNote}${bccNote} for case ${caseId}, task ${taskId}`
   );
-  return { sent: true, to: recipient.email, bcc: bcc || null };
+  return { sent: true, to: recipient.email, cc, bcc: bcc || null };
 }
 
 /** Never throws — notification failures must not break task creation. */

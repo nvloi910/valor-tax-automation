@@ -85,17 +85,26 @@ await runAsync("notifyOfficerTaskCreated sends when recipient resolved", async (
       sourceTag: "test",
     },
     {
-      env: gmailEnv,
+      env: {
+        ...gmailEnv,
+        GMAIL_NOTIFY_MANAGERS: "manager@valortaxrelief.com",
+        GMAIL_NOTIFY_BCC: "false",
+      },
       resolveEmailFn: async () => ({ email: "anthony@example.com", name: "Anthony Edwards" }),
-      sendFn: async (msg) => {
+      sendFn: async (msg, options) => {
         sent = msg;
-        return { id: "1" };
+        return {
+          id: "1",
+          cc: ["manager@valortaxrelief.com"],
+          bcc: null,
+        };
       },
     }
   );
 
   assert.equal(result.sent, true);
   assert.equal(result.to, "anthony@example.com");
+  assert.deepEqual(result.cc, ["manager@valortaxrelief.com"]);
   assert.equal(sent.to, "anthony@example.com");
   assert.ok(sent.subject.includes("New appointment booked"));
   assert.ok(sent.html.includes("New Appointment Booked"));

@@ -169,9 +169,10 @@ export function buildCaseActivityDetails(payload, context = {}) {
     .join("\n");
 
   return {
-    subject: `Auto Task Created: ${context.taskSubject || "Appointment Task"}`,
-    comment,
-    popup: false,
-    pin: false,
+    ActivityType: "General",
+    Subject: `Auto Task Created: ${context.taskSubject || "Appointment Task"}`,
+    Comment: comment,
+    Popup: false,
+    Pin: false,
   };
 }

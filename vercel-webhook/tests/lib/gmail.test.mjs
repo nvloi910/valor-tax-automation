@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import {
   encodeGmailRawMessage,
   isGmailConfigured,
+  parseEmailList,
   refreshGmailAccessToken,
+  resolveGmailNotifyCc,
   sendGmail,
 } from "../../lib/gmail.js";
 
@@ -72,6 +74,64 @@ run("encodeGmailRawMessage includes Bcc header when provided", () => {
     "base64"
   ).toString("utf8");
   assert.ok(decoded.includes("Bcc: no-reply@valortaxrelief.com"));
+});
+
+run("parseEmailList splits comma-separated manager emails", () => {
+  assert.deepEqual(parseEmailList("a@x.com, b@x.com"), ["a@x.com", "b@x.com"]);
+  assert.deepEqual(parseEmailList(""), []);
+  assert.deepEqual(parseEmailList("false"), []);
+});
+
+run("resolveGmailNotifyCc excludes officer and bcc duplicates", () => {
+  const cc = resolveGmailNotifyCc(
+    {
+      GMAIL_NOTIFY_MANAGERS: "manager@valortaxrelief.com,officer@example.com",
+      GMAIL_NOTIFY_BCC: "no-reply@valortaxrelief.com",
+    },
+    { to: "officer@example.com", bcc: "no-reply@valortaxrelief.com" }
+  );
+  assert.deepEqual(cc, ["manager@valortaxrelief.com"]);
+});
+
+run("encodeGmailRawMessage includes Cc header when provided", () => {
+  const raw = encodeGmailRawMessage({
+    from: "no-reply@example.com",
+    to: "officer@example.com",
+    cc: "manager@valortaxrelief.com",
+    subject: "Test",
+    text: "Hello",
+  });
+  const decoded = Buffer.from(
+    raw.replace(/-/g, "+").replace(/_/g, "/"),
+    "base64"
+  ).toString("utf8");
+  assert.ok(decoded.includes("Cc: manager@valortaxrelief.com"));
+});
+
+await runAsync("sendGmail adds manager Cc from GMAIL_NOTIFY_MANAGERS", async () => {
+  let capturedBody;
+  await sendGmail(
+    { to: "officer@example.com", subject: "Task", text: "Body" },
+    {
+      env: {
+        ...env,
+        GMAIL_NOTIFY_MANAGERS: "manager1@valortaxrelief.com,manager2@valortaxrelief.com",
+        GMAIL_NOTIFY_BCC: "false",
+      },
+      fetchImpl: async (url, init) => {
+        if (String(url).includes("oauth2.googleapis.com")) {
+          return { ok: true, json: async () => ({ access_token: "tok" }) };
+        }
+        capturedBody = JSON.parse(init.body).raw;
+        return { ok: true, json: async () => ({ id: "msg-1" }) };
+      },
+    }
+  );
+  const decoded = Buffer.from(
+    capturedBody.replace(/-/g, "+").replace(/_/g, "/"),
+    "base64"
+  ).toString("utf8");
+  assert.ok(decoded.includes("Cc: manager1@valortaxrelief.com, manager2@valortaxrelief.com"));
 });
 
 await runAsync("sendGmail adds default Bcc copy address", async () => {

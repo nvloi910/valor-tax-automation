@@ -32,6 +32,14 @@ export async function refreshGmailAccessToken(env = process.env, fetchImpl = fet
   return payload.access_token;
 }
 
+export function parseEmailList(raw) {
+  if (raw === undefined || raw === null || raw === "false" || raw === "") return [];
+  return String(raw)
+    .split(/[,;]+/)
+    .map((email) => email.trim())
+    .filter((email) => email.includes("@"));
+}
+
 export function resolveGmailNotifyBcc(env = process.env, to) {
   const configured = env.GMAIL_NOTIFY_BCC;
   if (configured === "false" || configured === "") return undefined;
@@ -42,7 +50,20 @@ export function resolveGmailNotifyBcc(env = process.env, to) {
   return bcc;
 }
 
-export function encodeGmailRawMessage({ from, to, bcc, subject, text, html }) {
+/** Additional manager emails (Cc) on appointment notifications. */
+export function resolveGmailNotifyCc(env = process.env, { to, bcc } = {}) {
+  const exclude = new Set(
+    [to, bcc, resolveGmailNotifyBcc(env, to)]
+      .filter(Boolean)
+      .map((email) => String(email).trim().toLowerCase())
+  );
+
+  return parseEmailList(env.GMAIL_NOTIFY_MANAGERS).filter(
+    (email) => !exclude.has(email.toLowerCase())
+  );
+}
+
+export function encodeGmailRawMessage({ from, to, cc, bcc, subject, text, html }) {
   let body;
   let contentType;
 
@@ -73,6 +94,7 @@ export function encodeGmailRawMessage({ from, to, bcc, subject, text, html }) {
     `From: ${from}`,
     `To: ${to}`,
   ];
+  if (cc) headers.push(`Cc: ${cc}`);
   if (bcc) headers.push(`Bcc: ${bcc}`);
   headers.push(
     `Subject: ${subject}`,
@@ -92,7 +114,7 @@ export function encodeGmailRawMessage({ from, to, bcc, subject, text, html }) {
 }
 
 export async function sendGmail(
-  { to, bcc, subject, text, html },
+  { to, cc, bcc, subject, text, html },
   { env = process.env, fetchImpl = fetch } = {}
 ) {
   if (!isGmailConfigured(env)) {
@@ -100,10 +122,17 @@ export async function sendGmail(
   }
 
   const resolvedBcc = bcc === undefined ? resolveGmailNotifyBcc(env, to) : bcc || undefined;
+  const resolvedCc =
+    cc === undefined
+      ? resolveGmailNotifyCc(env, { to, bcc: resolvedBcc })
+      : parseEmailList(cc);
+  const ccHeader = resolvedCc.length ? resolvedCc.join(", ") : undefined;
+
   const accessToken = await refreshGmailAccessToken(env, fetchImpl);
   const raw = encodeGmailRawMessage({
     from: env.GMAIL_USER,
     to,
+    cc: ccHeader,
     bcc: resolvedBcc,
     subject,
     text,
@@ -126,5 +155,5 @@ export async function sendGmail(
     );
   }
 
-  return { ...payload, bcc: resolvedBcc || null };
+  return { ...payload, bcc: resolvedBcc || null, cc: resolvedCc };
 }

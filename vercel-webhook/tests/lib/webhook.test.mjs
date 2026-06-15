@@ -156,8 +156,9 @@ run("buildCaseActivityDetails creates subject and comment for successful task lo
   );
 
   assert.deepEqual(activity, {
-    subject: "Auto Task Created: Appointment: Consultation â€” Tuesday, March 31, 2026 3:00 PM",
-    comment: [
+    ActivityType: "General",
+    Subject: "Auto Task Created: Appointment: Consultation â€” Tuesday, March 31, 2026 3:00 PM",
+    Comment: [
       "An IRS Logics task was created automatically from the GHL appointment webhook.",
       "Task ID: 98765",
       "Assigned To: Anthony Edwards",
@@ -167,8 +168,8 @@ run("buildCaseActivityDetails creates subject and comment for successful task lo
       "Calendar: Valor Tax Appointment",
       "AI Summary: Needs help",
     ].join("\n"),
-    popup: false,
-    pin: false,
+    Popup: false,
+    Pin: false,
   });
 });
 
