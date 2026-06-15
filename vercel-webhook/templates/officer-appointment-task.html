@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Appointment Booked - Valor Tax Relief</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+    .header { background: linear-gradient(135deg, #1e3a8a 0%, #dc2626 100%); color: white; padding: 30px 20px; text-align: center; }
+    .logo { max-width: 100px; height: auto; margin-bottom: 15px; }
+    .content { padding: 30px 20px; background: #f8fafc; }
+    .lead-info { background: white; padding: 25px; margin: 20px 0; border-radius: 8px; border-left: 5px solid #1e3a8a; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .field { margin: 15px 0; display: flex; align-items: flex-start; }
+    .label { font-weight: 600; color: #374151; min-width: 150px; }
+    .value { color: #1f2937; flex: 1; }
+    .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; padding: 20px; background: white; border-top: 1px solid #e5e7eb; }
+    .section-title { color: #1e3a8a; margin: 28px 0 0 0; font-size: 20px; font-weight: 600; text-align: center; }
+    .intro { font-size: 18px; text-align: center; color: #1e3a8a; font-weight: 600; margin-top: 10px; }
+    .note { text-align: center; margin-top: 10px; color: #374151; }
+    .details-block { background: #f1f5f9; padding: 15px; border-radius: 6px; margin-top: 10px; white-space: pre-wrap; font-size: 14px; color: #374151; }
+    .badge { display: inline-block; background: #1e3a8a; color: white; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 4px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://valortaxrelief.com/assets/images/logo.png" alt="Valor Tax Relief" class="logo">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: white;">New Appointment Booked</h1>
+      <p style="margin: 10px 0 0 0; opacity: 0.9; color: white;">A customer has scheduled an appointment with Valor Tax Relief</p>
+    </div>
+
+    <div class="content">
+      <div class="intro">
+        Hi {{OFFICER_NAME}},
+      </div>
+      <div class="note">
+        A client has booked a new appointment. Review the booking details below — a matching task has been added to IRS Logics on their case.
+      </div>
+      {{SOURCE_BADGE}}
+
+      <h2 class="section-title">Booking Information</h2>
+      <div class="lead-info">
+        <div class="field">
+          <span class="label">Client name:</span>
+          <span class="value">{{CONTACT_NAME}}</span>
+        </div>
+        <div class="field">
+          <span class="label">Client email:</span>
+          <span class="value">{{CONTACT_EMAIL}}</span>
+        </div>
+        <div class="field">
+          <span class="label">Client phone:</span>
+          <span class="value">{{CONTACT_PHONE}}</span>
+        </div>
+        <div class="field">
+          <span class="label">Appointment:</span>
+          <span class="value">{{APPOINTMENT_TITLE}}</span>
+        </div>
+        <div class="field">
+          <span class="label">Start time:</span>
+          <span class="value">{{APPOINTMENT_START}}</span>
+        </div>
+        <div class="field">
+          <span class="label">End time:</span>
+          <span class="value">{{APPOINTMENT_END}}</span>
+        </div>
+        <div class="field">
+          <span class="label">Calendar:</span>
+          <span class="value">{{CALENDAR_NAME}}</span>
+        </div>
+        {{AI_SUMMARY_BLOCK}}
+        {{AI_TRANSCRIPT_BLOCK}}
+      </div>
+
+      <h2 class="section-title">Case Information</h2>
+      <div class="lead-info">
+        <div class="field">
+          <span class="label">Case ID:</span>
+          <span class="value">{{CASE_ID}}</span>
+        </div>
+      </div>
+
+      <h2 class="section-title">IRS Logics Task</h2>
+      <div class="lead-info">
+        <div class="field">
+          <span class="label">Task ID:</span>
+          <span class="value">{{TASK_ID}}</span>
+        </div>
+        <div class="field">
+          <span class="label">Task subject:</span>
+          <span class="value">{{TASK_SUBJECT}}</span>
+        </div>
+        <div class="field">
+          <span class="label">Assigned to:</span>
+          <span class="value">{{OFFICER_NAME}}</span>
+        </div>
+        <div class="field">
+          <span class="label">Assignment:</span>
+          <span class="value">{{ASSIGNMENT_METHOD}}</span>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p><strong>Valor Tax Relief</strong> – Honest, Transparent, and Effective Tax Solutions</p>
+        <p>This message was sent automatically when a customer booked an appointment through GoHighLevel.</p>
+        <p>Questions? Call us at (800) 252-0141</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

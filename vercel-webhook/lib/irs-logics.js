@@ -88,6 +88,27 @@ export async function getCaseOfficer(caseId) {
   };
 }
 
+/** GET /Appointment/GetSettlementOfficerEmail?CaseID= — settlement officer email for a case. */
+export async function getSettlementOfficerEmail(caseId) {
+  const { ok, payload } = await requestIrsLogicsJson(
+    `/Appointment/GetSettlementOfficerEmail?CaseID=${encodeURIComponent(caseId)}`
+  );
+
+  if (!ok || payload?.Success === false) return null;
+
+  const data = getPayloadData(payload);
+  if (typeof data === "string" && data.includes("@")) return data.trim();
+  if (typeof data === "object" && data !== null) {
+    const email = data.Email || data.email || data.SettlementOfficerEmail;
+    if (email && String(email).includes("@")) return String(email).trim();
+  }
+  if (typeof payload?.Message === "string" && payload.Message.includes("@")) {
+    return payload.Message.trim();
+  }
+
+  return null;
+}
+
 export async function createTask(taskPayload) {
   const { ok, status, payload } = await requestIrsLogicsJson("/Task/Task", {
     method: "POST",
@@ -273,59 +294,119 @@ export async function findCaseExhaustive(email, phone, extraEmails = [], extraPh
   return { caseId: null, lookupMethod: null, lookupResponse: null };
 }
 
-export function parseGhlDate(raw) {
-  if (!raw) return undefined;
-  const cleaned = raw.replace(/^\w+,\s*/, "");
+const DEFAULT_WALL_TIMEZONE = "America/Los_Angeles";
 
-  // GHL API format: "2026-04-12 18:00:00" — already UTC, parse as UTC explicitly.
-  if (/^\d{4}-\d{2}-\d{2}/.test(cleaned)) {
-    const normalized = cleaned.replace(" ", "T");
-    const hasOffset =
-      normalized.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(normalized);
-    const d = new Date(hasOffset ? normalized : normalized + "Z");
-    return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
-  }
+const MONTH_INDEX = {
+  jan: 0,
+  january: 0,
+  feb: 1,
+  february: 1,
+  mar: 2,
+  march: 2,
+  apr: 3,
+  april: 3,
+  may: 4,
+  jun: 5,
+  june: 5,
+  jul: 6,
+  july: 6,
+  aug: 7,
+  august: 7,
+  sep: 8,
+  sept: 8,
+  september: 8,
+  oct: 9,
+  october: 9,
+  nov: 10,
+  november: 10,
+  dec: 11,
+  december: 11,
+};
 
-  // GHL webhook format: "April 12, 2026 11:00 AM" — Pacific wall-clock time.
-  // Parse components manually (avoids new Date(string) local-timezone ambiguity),
-  // then find the UTC instant where America/Los_Angeles shows that same h:m.
-  const m = cleaned.match(/^(\w+)\s+(\d+),\s*(\d{4})\s+(\d+):(\d+)\s*(AM|PM)/i);
-  if (!m) return undefined;
-
-  const MONTHS = [
-    "january", "february", "march", "april", "may", "june",
-    "july", "august", "september", "october", "november", "december",
-  ];
-  const month = MONTHS.indexOf(m[1].toLowerCase());
-  if (month === -1) return undefined;
-
-  const day = parseInt(m[2]);
-  const year = parseInt(m[3]);
-  let hour = parseInt(m[4]);
-  const minute = parseInt(m[5]);
-  const ampm = m[6].toUpperCase();
-  if (ampm === "PM" && hour !== 12) hour += 12;
-  if (ampm === "AM" && hour === 12) hour = 0;
-
-  // Start with a UTC candidate where UTC components = intended Pacific h:m.
-  // Iteratively shift until Pacific wall clock matches (handles DST correctly).
-  let candidate = new Date(Date.UTC(year, month, day, hour, minute, 0));
+/**
+ * Convert wall-clock components in a given IANA timezone to UTC ISO.
+ * Handles DST via iterative correction against Intl.
+ */
+function wallClockToUtcIso(year, monthIndex, day, hour24, minute, timeZone = DEFAULT_WALL_TIMEZONE) {
+  let candidate = new Date(Date.UTC(year, monthIndex, day, hour24, minute, 0));
 
   for (let i = 0; i < 3; i++) {
     const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Los_Angeles",
+      timeZone,
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
     }).formatToParts(candidate);
-    const pHour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0");
-    const pMin = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0");
-    const diffMs = ((hour - pHour) * 60 + (minute - pMin)) * 60000;
+    const pHour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10);
+    const pMin = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10);
+    const diffMs = ((hour24 - pHour) * 60 + (minute - pMin)) * 60000;
     if (diffMs === 0) break;
     candidate = new Date(candidate.getTime() + diffMs);
   }
 
   return candidate.toISOString();
+}
+
+/**
+ * Parse GHL appointment datetime strings to UTC ISO.
+ *
+ * @param {string} raw
+ * @param {{ fromGhlApi?: boolean, timeZone?: string }} [options]
+ *   - fromGhlApi: true for GHL REST/MCP times documented as UTC ("YYYY-MM-DD HH:mm:ss")
+ *   - default (webhook): numeric datetimes without offset are Pacific wall clock
+ */
+export function parseGhlDate(raw, { fromGhlApi = false, timeZone = DEFAULT_WALL_TIMEZONE } = {}) {
+  if (!raw) return undefined;
+
+  let cleaned = String(raw).trim();
+  cleaned = cleaned.replace(/^\w+,\s*/, "");
+  cleaned = cleaned.replace(/\s*\((PDT|PST|UTC)\)\s*$/i, "").trim();
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(cleaned)) {
+    const normalized = cleaned.replace(" ", "T");
+    const hasOffset =
+      normalized.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(normalized);
+
+    if (hasOffset) {
+      const d = new Date(normalized);
+      return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+    }
+
+    const parts = cleaned.match(
+      /^(\d{4})-(\d{2})-(\d{2})(?:[\sT](\d{2}):(\d{2})(?::(\d{2}))?)?/
+    );
+    if (!parts) return undefined;
+
+    const year = parseInt(parts[1], 10);
+    const month = parseInt(parts[2], 10) - 1;
+    const day = parseInt(parts[3], 10);
+    const hour = parts[4] !== undefined ? parseInt(parts[4], 10) : 0;
+    const minute = parts[5] !== undefined ? parseInt(parts[5], 10) : 0;
+
+    if (fromGhlApi) {
+      const d = new Date(Date.UTC(year, month, day, hour, minute, 0));
+      return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+    }
+
+    return wallClockToUtcIso(year, month, day, hour, minute, timeZone);
+  }
+
+  // Human: "June 15, 2026 1:00 PM" or "Jun 15, 2026, 01:00 PM"
+  const m = cleaned.match(/^(\w+)\s+(\d{1,2}),\s*(\d{4}),?\s+(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!m) return undefined;
+
+  const month = MONTH_INDEX[m[1].toLowerCase()];
+  if (month === undefined) return undefined;
+
+  const day = parseInt(m[2], 10);
+  const year = parseInt(m[3], 10);
+  let hour = parseInt(m[4], 10);
+  const minute = parseInt(m[5], 10);
+  const ampm = m[6].toUpperCase();
+  if (ampm === "PM" && hour !== 12) hour += 12;
+  if (ampm === "AM" && hour === 12) hour = 0;
+
+  return wallClockToUtcIso(year, month, day, hour, minute, timeZone);
 }
 
 export async function findCase(email, phone) {

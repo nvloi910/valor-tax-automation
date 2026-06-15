@@ -27,6 +27,7 @@ import {
   getRecentTaskLogs,
   filterNewAppointments,
 } from "@/lib/safety-net";
+import { safeNotifyOfficerTaskCreated } from "@/lib/notify-officer";
 
 export const dynamic = "force-dynamic";
 
@@ -260,6 +261,16 @@ async function processTaskFailed(row, results) {
     await completePendingTask(row.id);
     results.completed++;
     console.log(`Pending #${row.id}: task_failed retry succeeded (case ${caseId}, officer ${officer.name})`);
+    await safeNotifyOfficerTaskCreated({
+      caseId,
+      taskId: taskResult.taskId,
+      taskDetails,
+      normalized,
+      assignedOfficer: officer,
+      officerName: officer.name,
+      assignmentMethod,
+      sourceTag: "pending retry",
+    });
   } else {
     console.log(`Pending #${row.id}: task_failed retry failed again — officer ${officer.name}: ${taskResult.errorMessage}`);
     await incrementRetry(row.id, row.retry_count, taskResult.errorMessage, "task_failed");
@@ -441,6 +452,16 @@ async function processPendingQueue() {
         await completePendingTask(row.id);
         results.completed++;
         console.log(`Pending #${row.id}: task created successfully (case ${caseId})`);
+        await safeNotifyOfficerTaskCreated({
+          caseId,
+          taskId: taskResult.taskId,
+          taskDetails,
+          normalized,
+          assignedOfficer: officer,
+          officerName: officer.name,
+          assignmentMethod,
+          sourceTag: "pending queue",
+        });
       } else {
         await incrementRetry(row.id, row.retry_count, taskResult.errorMessage, row.reason);
         results.failed++;
@@ -475,7 +496,7 @@ async function safetyNetSweep() {
           continue;
         }
 
-        const parsedStart = parseGhlDate(appt.startTime) || appt.startTime;
+        const parsedStart = parseGhlDate(appt.startTime, { fromGhlApi: true }) || appt.startTime;
         if (await isDuplicateTask(lookup.caseId, parsedStart)) {
           results.skipped++;
           continue;
@@ -547,7 +568,19 @@ async function safetyNetSweep() {
           errorMessage: taskResult.errorMessage || null,
         });
 
-        if (taskResult.ok) results.created++;
+        if (taskResult.ok) {
+          results.created++;
+          await safeNotifyOfficerTaskCreated({
+            caseId: lookup.caseId,
+            taskId: taskResult.taskId,
+            taskDetails,
+            normalized,
+            assignedOfficer: officer,
+            officerName: officer.name,
+            assignmentMethod,
+            sourceTag: "safety net",
+          });
+        }
       } catch (err) {
         console.error("Safety net: failed to process appointment:", err.message);
         results.skipped++;

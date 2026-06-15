@@ -191,8 +191,10 @@ run("parseGhlDate strips the weekday and returns iso output", () => {
   // GHL webhook format: "3:00 PM" is Pacific wall time (Valor is in CA).
   // March 31 = PDT (UTC-7). 3:00 PM PDT = 22:00 UTC.
   assert.equal(parseGhlDate("Tuesday, March 31, 2026 3:00 PM"), "2026-03-31T22:00:00.000Z");
-  // GHL API UTC format should pass through unchanged
-  assert.equal(parseGhlDate("2026-04-12 18:00:00"), "2026-04-12T18:00:00.000Z");
+  // Webhook numeric without offset = Pacific wall clock
+  assert.equal(parseGhlDate("2026-06-15 13:00:00"), "2026-06-15T20:00:00.000Z");
+  // GHL API UTC format
+  assert.equal(parseGhlDate("2026-04-12 18:00:00", { fromGhlApi: true }), "2026-04-12T18:00:00.000Z");
   assert.equal(parseGhlDate("invalid"), undefined);
 });
 

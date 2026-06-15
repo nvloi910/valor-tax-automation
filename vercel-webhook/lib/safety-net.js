@@ -14,8 +14,8 @@ export function filterNewAppointments(ghlAppointments, existingLogs) {
 
   return ghlAppointments.filter((appt) => {
     if (!appt.contactEmail || !appt.startTime) return true;
-    // GHL API returns times as "YYYY-MM-DD HH:MM:SS" in UTC — normalize directly to ISO without timezone shift
-    const asUtcIso = appt.startTime.replace(" ", "T") + (appt.startTime.includes("Z") ? "" : "Z");
+    const asUtcIso = parseGhlDate(appt.startTime, { fromGhlApi: true });
+    if (!asUtcIso) return true;
     const normalizedStart = asUtcIso.replace(/\.\d{3}Z$/, "").replace(/Z$/, "");
     const key = `${appt.contactEmail.toLowerCase()}|${normalizedStart}`;
     return !loggedSet.has(key);

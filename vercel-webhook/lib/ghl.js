@@ -5,6 +5,7 @@ import {
   findGhlContactIdViaMcp,
   isGhlMcpConfigured,
 } from "./ghl-mcp.js";
+import { parseGhlDate } from "./irs-logics.js";
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 
@@ -21,6 +22,21 @@ function getGhlHeaders() {
 
 function hasAppointmentData(value) {
   return Boolean(value?.appointmentStart || value?.startTime);
+}
+
+/** GHL REST/MCP returns UTC "YYYY-MM-DD HH:mm:ss" — normalize to ISO for downstream. */
+function normalizeGhlApiAppointmentFields(fields) {
+  if (!fields || typeof fields !== "object") return fields;
+  const out = { ...fields };
+  if (out.appointmentStart) {
+    out.appointmentStart =
+      parseGhlDate(out.appointmentStart, { fromGhlApi: true }) || out.appointmentStart;
+  }
+  if (out.appointmentEnd) {
+    out.appointmentEnd =
+      parseGhlDate(out.appointmentEnd, { fromGhlApi: true }) || out.appointmentEnd;
+  }
+  return out;
 }
 
 async function findGhlContactRest(email, phone) {
@@ -282,12 +298,12 @@ async function fetchAppointmentFromRest(email, phone) {
     calendarName = await getCalendarNameRest(appointment.calendarId);
   }
 
-  return {
+  return normalizeGhlApiAppointmentFields({
     appointmentTitle: appointment.title || undefined,
     appointmentStart: appointment.startTime || undefined,
     appointmentEnd: appointment.endTime || undefined,
     calendarName: calendarName || undefined,
-  };
+  });
 }
 
 export async function fetchAppointmentFromGhlWithProviders(
@@ -298,7 +314,7 @@ export async function fetchAppointmentFromGhlWithProviders(
     const restResult = await restFetcher(email, phone);
     if (hasAppointmentData(restResult)) {
       return {
-        ...restResult,
+        ...normalizeGhlApiAppointmentFields(restResult),
         recoverySource: "rest",
       };
     }
@@ -310,7 +326,7 @@ export async function fetchAppointmentFromGhlWithProviders(
     const mcpResult = await mcpFetcher(email, phone);
     if (hasAppointmentData(mcpResult)) {
       return {
-        ...mcpResult,
+        ...normalizeGhlApiAppointmentFields(mcpResult),
         recoverySource: "mcp",
       };
     }

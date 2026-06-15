@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node tests/lib/webhook.test.mjs"
+    "test": "node tests/lib/webhook.test.mjs && node tests/lib/datetime-pipeline.test.mjs && node tests/lib/email-templates.test.mjs && node tests/lib/gmail.test.mjs && node tests/lib/notify-officer.test.mjs"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.3.26",

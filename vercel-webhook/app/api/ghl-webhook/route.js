@@ -17,6 +17,7 @@ import {
 } from "@/lib/webhook";
 import { buildPendingEntry, insertPendingTask } from "@/lib/pending";
 import { isDuplicateTask } from "@/lib/dedup";
+import { safeNotifyOfficerTaskCreated } from "@/lib/notify-officer";
 
 export const dynamic = "force-dynamic";
 
@@ -336,6 +337,17 @@ export async function POST(request) {
       appointmentStart: parsedStartUtc,
       appointmentEnd: parsedEndUtc,
       status: "success",
+    });
+
+    await safeNotifyOfficerTaskCreated({
+      caseId,
+      taskId,
+      taskDetails,
+      normalized,
+      assignedOfficer: officer,
+      officerName: officer.name,
+      assignmentMethod,
+      sourceTag: "GHL webhook",
     });
 
     return NextResponse.json({
