@@ -75,7 +75,7 @@ export function buildTaskCreatedEmail({
   const subjectParts = ["New appointment booked"];
   if (booking.contactName) subjectParts.push(booking.contactName);
   if (booking.appointmentStart) subjectParts.push(booking.appointmentStart);
-  const subject = subjectParts.join(" — ");
+  const subject = subjectParts.join(" - ");
 
   const html = renderOfficerTaskEmailHtml({
     caseId,

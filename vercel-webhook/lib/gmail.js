@@ -63,6 +63,14 @@ export function resolveGmailNotifyCc(env = process.env, { to, bcc } = {}) {
   );
 }
 
+export function encodeMimeHeader(value) {
+  if (value === undefined || value === null) return "";
+  const text = String(value);
+  if (/^[\x00-\x7F]*$/.test(text)) return text;
+  const encoded = Buffer.from(text, "utf8").toString("base64");
+  return `=?UTF-8?B?${encoded}?=`;
+}
+
 export function encodeGmailRawMessage({ from, to, cc, bcc, subject, text, html }) {
   let body;
   let contentType;
@@ -97,7 +105,7 @@ export function encodeGmailRawMessage({ from, to, cc, bcc, subject, text, html }
   if (cc) headers.push(`Cc: ${cc}`);
   if (bcc) headers.push(`Bcc: ${bcc}`);
   headers.push(
-    `Subject: ${subject}`,
+    `Subject: ${encodeMimeHeader(subject)}`,
     "MIME-Version: 1.0",
     `Content-Type: ${contentType}`,
     "",

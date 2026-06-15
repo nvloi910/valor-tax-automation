@@ -24,17 +24,15 @@ function hasAppointmentData(value) {
   return Boolean(value?.appointmentStart || value?.startTime);
 }
 
-/** GHL REST/MCP returns UTC "YYYY-MM-DD HH:mm:ss" — normalize to ISO for downstream. */
+/** GHL REST/MCP numeric times are location wall clock (Pacific), not UTC. */
 function normalizeGhlApiAppointmentFields(fields) {
   if (!fields || typeof fields !== "object") return fields;
   const out = { ...fields };
   if (out.appointmentStart) {
-    out.appointmentStart =
-      parseGhlDate(out.appointmentStart, { fromGhlApi: true }) || out.appointmentStart;
+    out.appointmentStart = parseGhlDate(out.appointmentStart) || out.appointmentStart;
   }
   if (out.appointmentEnd) {
-    out.appointmentEnd =
-      parseGhlDate(out.appointmentEnd, { fromGhlApi: true }) || out.appointmentEnd;
+    out.appointmentEnd = parseGhlDate(out.appointmentEnd) || out.appointmentEnd;
   }
   return out;
 }

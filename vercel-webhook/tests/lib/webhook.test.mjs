@@ -84,7 +84,7 @@ run("buildTaskDetails creates task subject, dates, and comments", () => {
 
   assert.equal(
     details.subject,
-    "Appointment: Consultation — Apr 6, 2026, 3:30 PM PDT"
+    "Appointment: Consultation - Apr 6, 2026, 3:30 PM PDT"
   );
   // DueDate should be UTC ISO with Z — sent directly to IRS Logics
   assert.equal(details.dueDate, "2026-04-06T22:30:00.000Z");

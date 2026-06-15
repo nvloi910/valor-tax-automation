@@ -27,7 +27,7 @@ await run("fetchAppointmentFromGhlWithProviders returns REST data first", async 
     }
   );
 
-  assert.equal(result.appointmentStart, "2026-04-02T12:00:00.000Z");
+  assert.equal(result.appointmentStart, "2026-04-02T19:00:00.000Z");
   assert.equal(result.recoverySource, "rest");
 });
 
@@ -43,7 +43,7 @@ await run("fetchAppointmentFromGhlWithProviders falls back to MCP when REST is e
     }
   );
 
-  assert.equal(result.appointmentStart, "2026-04-03T12:00:00.000Z");
+  assert.equal(result.appointmentStart, "2026-04-03T19:00:00.000Z");
   assert.equal(result.recoverySource, "mcp");
 });
 

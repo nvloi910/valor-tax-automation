@@ -18,6 +18,11 @@ import {
 import { buildPendingEntry, insertPendingTask } from "@/lib/pending";
 import { isDuplicateTask } from "@/lib/dedup";
 import { safeNotifyOfficerTaskCreated } from "@/lib/notify-officer";
+import {
+  describeAppointmentTime,
+  logGhlWebhook,
+  summarizeGhlWebhookBody,
+} from "@/lib/webhook-debug";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +57,13 @@ export async function POST(request) {
   try {
     const body = await request.json();
     normalized = normalizeWebhookPayload(body);
+
+    logGhlWebhook("raw_payload", summarizeGhlWebhookBody(body));
+    logGhlWebhook("normalized", {
+      ...normalized,
+      appointmentStartTrace: describeAppointmentTime(normalized.appointmentStart),
+      appointmentEndTrace: describeAppointmentTime(normalized.appointmentEnd),
+    });
 
     // Recovery: if email/phone are missing, try to find the contact by name in GHL
     if (!normalized.email && !normalized.phone) {
@@ -153,6 +165,15 @@ export async function POST(request) {
         normalized.phone
       );
 
+      logGhlWebhook("ghl_api_fallback", {
+        recoverySource: ghlData.recoverySource || null,
+        appointmentStart: ghlData.appointmentStart || null,
+        appointmentEnd: ghlData.appointmentEnd || null,
+        appointmentTitle: ghlData.appointmentTitle || null,
+        calendarName: ghlData.calendarName || null,
+        appointmentStartTrace: describeAppointmentTime(ghlData.appointmentStart),
+      });
+
       if (ghlData.appointmentStart) {
         normalized.appointmentStart = ghlData.appointmentStart;
       }
@@ -235,6 +256,26 @@ export async function POST(request) {
 
     taskDetails = buildTaskDetails(normalized);
 
+    logGhlWebhook("task_build", {
+      caseId,
+      lookupMethod,
+      appointmentStartTrace: describeAppointmentTime(normalized.appointmentStart),
+      taskSubject: taskDetails.subject,
+      dueDateUtc: taskDetails.dueDate,
+      dueDatePacific: taskDetails.dueDate
+        ? new Date(taskDetails.dueDate).toLocaleString("en-US", {
+            timeZone: "America/Los_Angeles",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+            timeZoneName: "short",
+          })
+        : null,
+    });
+
     // Defense in depth — if parseGhlDate couldn't parse the raw string even
     // though it was non-empty, defer to the pending queue rather than send a
     // null DueDate (which IRS Logics rejects, and previously would have
@@ -272,6 +313,8 @@ export async function POST(request) {
       ...(taskDetails.endDate ? { EndDate: taskDetails.endDate } : {}),
       ...(taskDetails.comments ? { Comments: taskDetails.comments } : {}),
     };
+
+    logGhlWebhook("irs_task_payload", taskPayload);
 
     const taskResult = await createTask(taskPayload);
     taskId = taskResult.taskId;

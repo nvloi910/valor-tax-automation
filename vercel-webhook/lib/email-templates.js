@@ -47,7 +47,7 @@ export function extractBookingFields({ normalized = {}, taskDetails = {} }) {
   let appointmentTitle = normalized.appointmentTitle?.trim();
   if (!appointmentTitle && taskDetails.subject) {
     const withoutPrefix = taskDetails.subject.replace(/^Appointment:\s*/i, "").trim();
-    const dashIndex = withoutPrefix.indexOf(" — ");
+    const dashIndex = withoutPrefix.search(/\s[-—]\s/);
     appointmentTitle =
       dashIndex > 0 ? withoutPrefix.slice(0, dashIndex).trim() : withoutPrefix;
   }

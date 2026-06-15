@@ -83,7 +83,16 @@ run("FIXED: GHL UI label Jun 15, 2026, 01:00 PM (PDT) → 1:00 PM PDT", () => {
   }))), true);
 });
 
-run("GHL API UTC numeric uses fromGhlApi (unchanged UTC semantics)", () => {
+run("GHL REST numeric time is Pacific wall clock (11 AM → 18:00 UTC)", () => {
+  const t = traceWebhookToIrsDates({
+    Email: "client@example.com",
+    appointment_start_time: "2026-06-16 11:00:00",
+  });
+  assert.equal(t.step4_dueDate, "2026-06-16T18:00:00.000Z");
+  assert.equal(t.step5_pacificFromDueDate, "Jun 16, 2026, 11:00 AM PDT");
+});
+
+run("fromGhlApi still parses true UTC when explicitly requested", () => {
   assert.equal(
     parseGhlDate("2026-06-15 20:00:00", { fromGhlApi: true }),
     JUN_15_1PM_PDT_UTC

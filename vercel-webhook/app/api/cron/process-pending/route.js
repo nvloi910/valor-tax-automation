@@ -496,7 +496,7 @@ async function safetyNetSweep() {
           continue;
         }
 
-        const parsedStart = parseGhlDate(appt.startTime, { fromGhlApi: true }) || appt.startTime;
+        const parsedStart = parseGhlDate(appt.startTime) || appt.startTime;
         if (await isDuplicateTask(lookup.caseId, parsedStart)) {
           results.skipped++;
           continue;

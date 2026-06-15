@@ -14,7 +14,7 @@ export function filterNewAppointments(ghlAppointments, existingLogs) {
 
   return ghlAppointments.filter((appt) => {
     if (!appt.contactEmail || !appt.startTime) return true;
-    const asUtcIso = parseGhlDate(appt.startTime, { fromGhlApi: true });
+    const asUtcIso = parseGhlDate(appt.startTime);
     if (!asUtcIso) return true;
     const normalizedStart = asUtcIso.replace(/\.\d{3}Z$/, "").replace(/Z$/, "");
     const key = `${appt.contactEmail.toLowerCase()}|${normalizedStart}`;

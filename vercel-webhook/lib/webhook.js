@@ -113,7 +113,7 @@ export function buildTaskDetails(payload) {
   const readableEnd = formatReadableDate(endDate || payload.appointmentEnd);
   let timeLabel = "";
   if (readableStart) {
-    timeLabel = ` — ${readableStart}`;
+    timeLabel = ` - ${readableStart}`;
   }
 
   const subject = `Appointment: ${appointmentTitle}${timeLabel}`;
