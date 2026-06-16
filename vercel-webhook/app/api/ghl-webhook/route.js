@@ -13,6 +13,7 @@ import {
   buildCaseActivityDetails,
   buildTaskDetails,
   canCreateTask,
+  formatTaskDatesForIrsLogics,
   normalizeWebhookPayload,
 } from "@/lib/webhook";
 import { buildPendingEntry, insertPendingTask } from "@/lib/pending";
@@ -308,9 +309,7 @@ export async function POST(request) {
       UserID: [officer.userId],
       PriorityID: 1,
       StatusID: 0,
-      DueDate: taskDetails.dueDate,
-      Reminder: taskDetails.reminder,
-      ...(taskDetails.endDate ? { EndDate: taskDetails.endDate } : {}),
+      ...formatTaskDatesForIrsLogics(taskDetails),
       ...(taskDetails.comments ? { Comments: taskDetails.comments } : {}),
     };
 

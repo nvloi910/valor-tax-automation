@@ -11,7 +11,7 @@ import {
   parseGhlDate,
 } from "@/lib/irs-logics";
 import { getNextOfficer, insertTaskLog } from "@/lib/supabase";
-import { buildTaskDetails, canCreateTask } from "@/lib/webhook";
+import { buildTaskDetails, canCreateTask, formatTaskDatesForIrsLogics } from "@/lib/webhook";
 import {
   getPendingTasks,
   completePendingTask,
@@ -230,9 +230,7 @@ async function processTaskFailed(row, results) {
     UserID: [officer.userId],
     PriorityID: 1,
     StatusID: 0,
-    DueDate: taskDetails.dueDate,
-    Reminder: taskDetails.reminder,
-    ...(taskDetails.endDate ? { EndDate: taskDetails.endDate } : {}),
+    ...formatTaskDatesForIrsLogics(taskDetails),
     ...(taskDetails.comments ? { Comments: `[Retry] ${taskDetails.comments}` } : {}),
   };
 
@@ -422,9 +420,7 @@ async function processPendingQueue() {
         UserID: [officer.userId],
         PriorityID: 1,
         StatusID: 0,
-        DueDate: taskDetails.dueDate,
-        Reminder: taskDetails.reminder,
-        ...(taskDetails.endDate ? { EndDate: taskDetails.endDate } : {}),
+        ...formatTaskDatesForIrsLogics(taskDetails),
         ...(comments ? { Comments: comments } : {}),
       };
 
@@ -540,9 +536,7 @@ async function safetyNetSweep() {
           UserID: [officer.userId],
           PriorityID: 1,
           StatusID: 0,
-          DueDate: taskDetails.dueDate,
-          Reminder: taskDetails.reminder,
-          ...(taskDetails.endDate ? { EndDate: taskDetails.endDate } : {}),
+          ...formatTaskDatesForIrsLogics(taskDetails),
           ...(taskDetails.comments
             ? { Comments: `[Safety Net] ${taskDetails.comments}` }
             : { Comments: "[Safety Net] Created by cron sweep" }),

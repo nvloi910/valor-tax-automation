@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import {
   buildTaskDetails,
   canCreateTask,
+  formatTaskDatesForIrsLogics,
   normalizeWebhookPayload,
 } from "../../lib/webhook.js";
 import { parseGhlDate } from "../../lib/irs-logics.js";
@@ -45,7 +46,9 @@ function traceWebhookToIrsDates(webhookBody) {
       ? pacificDisplay(taskDetails.dueDate)
       : null,
     step6_irsPayload: taskDetails.dueDate
-      ? { DueDate: taskDetails.dueDate, Reminder: taskDetails.reminder }
+      ? {
+          ...formatTaskDatesForIrsLogics(taskDetails),
+        }
       : null,
   };
 }
@@ -60,6 +63,8 @@ run("pipeline: GHL human webhook (full month) → 1:00 PM PDT DueDate", () => {
   });
   assert.equal(t.step3_parseGhlDate, JUN_15_1PM_PDT_UTC);
   assert.equal(t.step5_pacificFromDueDate, JUN_15_1PM_PDT_DISPLAY);
+  assert.equal(t.step6_irsPayload?.DueDate, "2026-06-15T13:00:00");
+  assert.equal(t.step6_irsPayload?.Reminder, "2026-06-15T13:00:00");
 });
 
 run("FIXED: webhook numeric 2026-06-15 13:00:00 → 1:00 PM PDT (Pacific wall clock)", () => {
@@ -101,6 +106,16 @@ run("fromGhlApi still parses true UTC when explicitly requested", () => {
     parseGhlDate("2026-04-12 18:00:00", { fromGhlApi: true }),
     "2026-04-12T18:00:00.000Z"
   );
+});
+
+run("IRS Logics payload uses Pacific wall clock for Curtis Smith 4 PM case", () => {
+  const t = traceWebhookToIrsDates({
+    Email: "test@example.com",
+    appointment_start_time: "2026-06-17 16:00:00",
+  });
+  assert.equal(t.step5_pacificFromDueDate, "Jun 17, 2026, 4:00 PM PDT");
+  assert.equal(t.step6_irsPayload?.DueDate, "2026-06-17T16:00:00");
+  assert.equal(t.step6_irsPayload?.Reminder, "2026-06-17T16:00:00");
 });
 
 run("pipeline: abbreviated month Jun 15, 2026 01:00 PM", () => {

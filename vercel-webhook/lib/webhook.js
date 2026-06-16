@@ -26,6 +26,19 @@ export function toPacificISO(utcIso) {
 }
 
 /**
+ * IRS Logics Task API expects Pacific wall-clock datetimes without a Z suffix.
+ * Sending raw UTC (…Z) makes DueDate look OK but Reminder drifts (e.g. 4 PM → 5 AM next day).
+ */
+export function formatTaskDatesForIrsLogics(taskDetails) {
+  if (!taskDetails?.dueDate) return {};
+  return {
+    DueDate: toPacificISO(taskDetails.dueDate),
+    Reminder: toPacificISO(taskDetails.reminder ?? taskDetails.dueDate),
+    ...(taskDetails.endDate ? { EndDate: toPacificISO(taskDetails.endDate) } : {}),
+  };
+}
+
+/**
  * Format an ISO date string into a human-readable form.
  * e.g. "2026-03-31T21:30:00.000Z" → "Mar 31, 2026 at 2:30 PM (PDT)"
  * Falls back to the raw value if parsing fails.
